@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { bankCurrentPot, getGameState, playTurn } from './services/game';
+import { ensureAnonymousSession } from './services/auth';
 
 const phrases = [
   'Tu joues avec le feu.',
@@ -18,20 +19,23 @@ export default function App() {
   const [bank, setBank] = useState(0);
   const [multiplier, setMultiplier] = useState(1);
   const [phrase, setPhrase] = useState('Prêt à tenter ta chance ?');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     async function load() {
       try {
+        await ensureAnonymousSession();
         const state = await getGameState();
         setNumber(state.current_number ?? 0);
         setStreak(state.streak ?? 0);
         setInGame(state.in_play ?? 0);
         setBank(state.loot ?? 0);
         setMultiplier(state.multiplier ?? 1);
-      } catch (err) {
-        setError('Connexion impossible. Vérifie Supabase.');
+      } catch {
+        setError('Connexion impossible. Vérifie Supabase et Anonymous Auth.');
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -41,7 +45,6 @@ export default function App() {
   async function play(direction: Direction) {
     if (loading) return;
     setLoading(true);
-    setError('');
 
     try {
       const result = await playTurn(direction);
@@ -56,9 +59,9 @@ export default function App() {
       );
     } catch {
       setError('Impossible de jouer ce tour.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   async function bankMoney() {
@@ -74,9 +77,9 @@ export default function App() {
       setPhrase('Bien joué. Tu as sécurisé le butin.');
     } catch {
       setError('Impossible de coffrer.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (
