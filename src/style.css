@@ -1,6 +1,4 @@
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
@@ -46,7 +44,10 @@ header span:last-child { color: #70f0a8; }
   font-weight: 1000;
   letter-spacing: -8px;
   text-shadow: 0 8px 0 rgba(255,255,255,.08);
-  transition: transform .15s ease;
+}
+
+.number.pop {
+  animation: pop .25s ease-out;
 }
 
 .number.danger,
@@ -82,9 +83,10 @@ button {
   font-weight: 1000;
   font-size: 16px;
   cursor: pointer;
-  transition: transform .15s ease;
+  transition: transform .15s ease, filter .15s ease;
 }
 
+button:hover { filter: brightness(1.08); }
 button:active { transform: scale(.96); }
 
 .buttons button:first-child { background: #353545; color: white; }
@@ -97,14 +99,25 @@ button:active { transform: scale(.96); }
   box-shadow: 0 10px 30px rgba(112,240,168,.25);
 }
 
-.result {
-  text-align: center;
+.bank:not(:disabled) {
+  animation: pulse 2s infinite;
 }
+
+.result { text-align: center; }
 
 .result button {
   display: block;
   width: min(100%, 280px);
   margin: 14px auto;
+}
+
+@keyframes pop {
+  from { transform: scale(.75); opacity: .3; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+  50% { transform: scale(1.03); }
 }
 
 @keyframes shake {
