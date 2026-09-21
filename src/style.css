@@ -1,0 +1,55 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #111;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+.game {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+  padding: 24px;
+}
+
+header {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+}
+
+.phrase {
+  min-height: 24px;
+  font-size: 20px;
+}
+
+.number {
+  font-size: 140px;
+  font-weight: 900;
+}
+
+.buttons {
+  display: flex;
+  gap: 16px;
+}
+
+button {
+  border: 0;
+  border-radius: 18px;
+  padding: 18px 24px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.bank {
+  width: 260px;
+  background: white;
+}
