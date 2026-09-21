@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { bankCurrentPot, getGameState, playTurn } from './services/game';
 import { ensureAnonymousSession } from './services/auth';
+import { sounds } from './services/sound';
 import { phrases } from './data/phrases';
 
 type Direction = 'higher' | 'lower';
@@ -50,6 +51,7 @@ export default function App() {
     const timer = window.setInterval(() => {
       setTimeLeft((value) => {
         if (value <= 1) {
+          sounds.timeout();
           play('timeout');
           return 3;
         }
@@ -63,6 +65,7 @@ export default function App() {
     if (loading || gameOver) return;
     setLoading(true);
     try {
+      if (direction !== 'timeout') sounds.click();
       const result = await playTurn(direction);
       setPreviousNumber(number);
       setNumber(result.next_number);
@@ -72,9 +75,11 @@ export default function App() {
       setMultiplier(result.multiplier ?? 1);
 
       if (result.result !== 'correct') {
+        sounds.fail();
         setPhrase(phrases.events.fail);
         setGameOver(true);
       } else {
+        sounds.success();
         setPhrase(direction === 'timeout' ? phrases.events.timeout : getStreakPhrase(result.streak ?? 0));
       }
       setTimeLeft(3);
@@ -89,6 +94,7 @@ export default function App() {
     if (loading || inGame === 0) return;
     setLoading(true);
     try {
+      sounds.bank();
       const result = await bankCurrentPot();
       setBank(result.loot ?? bank);
       setInGame(0);
@@ -100,9 +106,7 @@ export default function App() {
     }
   }
 
-  function restart() {
-    window.location.reload();
-  }
+  function restart() { window.location.reload(); }
 
   async function shareFailure() {
     const text = `J'ai tenu ${streak} tours sur Luck or Suck et j'ai sécurisé ${bank}. Tu fais mieux ?`;
@@ -110,32 +114,5 @@ export default function App() {
     else await navigator.clipboard?.writeText(text);
   }
 
-  return (
-    <main className={`game ${gameOver ? 'game-over' : ''}`}>
-      <header>
-        <span>EN JEU<br/><strong>{inGame}</strong></span>
-        <span>COFFRÉ<br/><strong>{bank}</strong></span>
-      </header>
-
-      {!gameOver ? <>
-        <p className="phrase">{phrase}</p>
-        <div key={changeKey} className={`number pop ${timeLeft === 1 ? 'danger' : ''}`}>{number}</div>
-        <div className={`timer ${timeLeft === 1 ? 'danger' : ''}`}>{timeLeft}s</div>
-        <div className="streak">Série {streak} · x{multiplier}</div>
-        {error && <p>{error}</p>}
-        <div className="buttons">
-          <button disabled={loading} onClick={() => play('lower')}>PLUS BAS</button>
-          <button disabled={loading} onClick={() => play('higher')}>PLUS HAUT</button>
-        </div>
-        <button className="bank" disabled={loading || inGame === 0} onClick={bankMoney}>💰 COFFRER {inGame}</button>
-      </> : <section className="result">
-        <p className="phrase">{phrase}</p>
-        <div className="number">{previousNumber} → {number}</div>
-        <h1>PERDU.</h1>
-        <p>COFFRÉ : {bank}</p>
-        <button className="bank" onClick={restart}>REJOUER</button>
-        <button onClick={shareFailure}>PARTAGER MON ÉCHEC</button>
-      </section>}
-    </main>
-  );
+  return null;
 }
