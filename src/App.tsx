@@ -8,6 +8,7 @@ const phrases = [
   'Encore debout ? Intéressant.',
   'Ça commence à sentir le braquage.',
   'Tu vas vraiment continuer ?',
+  'Tu comptes vraiment aller plus loin ?',
 ];
 
 type Direction = 'higher' | 'lower';
@@ -19,6 +20,7 @@ export default function App() {
   const [bank, setBank] = useState(0);
   const [multiplier, setMultiplier] = useState(1);
   const [phrase, setPhrase] = useState('Prêt à tenter ta chance ?');
+  const [timeLeft, setTimeLeft] = useState(3);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -42,9 +44,27 @@ export default function App() {
     load();
   }, []);
 
-  async function play(direction: Direction) {
+  useEffect(() => {
+    if (loading || number === 0) return;
+
+    const timer = window.setInterval(() => {
+      setTimeLeft((current) => {
+        if (current <= 1) {
+          play('timeout');
+          return 3;
+        }
+        return current - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [loading, number]);
+
+  async function play(direction: Direction | 'timeout') {
     if (loading) return;
     setLoading(true);
+    setTimeLeft(3);
+    setError('');
 
     try {
       const result = await playTurn(direction);
@@ -52,11 +72,16 @@ export default function App() {
       setStreak(result.streak ?? 0);
       setInGame(result.in_play ?? 0);
       setMultiplier(result.multiplier ?? 1);
-      setPhrase(
-        result.result === 'correct'
-          ? phrases[Math.floor(Math.random() * phrases.length)]
-          : 'Aïe. La chance vient de te gifler.'
-      );
+
+      if (direction === 'timeout') {
+        setPhrase('TROP LENT. Fallait choisir.');
+      } else {
+        setPhrase(
+          result.result === 'correct'
+            ? phrases[Math.floor(Math.random() * phrases.length)]
+            : 'Aïe. La chance vient de te gifler.'
+        );
+      }
     } catch {
       setError('Impossible de jouer ce tour.');
     } finally {
@@ -91,6 +116,7 @@ export default function App() {
 
       <p className="phrase">{phrase}</p>
       <div className="number">{number}</div>
+      <div className="timer">{timeLeft}s</div>
       <div className="streak">Série : {streak} · x{multiplier}</div>
 
       {error && <p>{error}</p>}
