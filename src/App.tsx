@@ -25,6 +25,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [gameOver, setGameOver] = useState(false);
+  const [changeKey, setChangeKey] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -65,6 +66,7 @@ export default function App() {
       const result = await playTurn(direction);
       setPreviousNumber(number);
       setNumber(result.next_number);
+      setChangeKey((value) => value + 1);
       setStreak(result.streak ?? 0);
       setInGame(result.in_play ?? 0);
       setMultiplier(result.multiplier ?? 1);
@@ -84,7 +86,7 @@ export default function App() {
   }
 
   async function bankMoney() {
-    if (loading) return;
+    if (loading || inGame === 0) return;
     setLoading(true);
     try {
       const result = await bankCurrentPot();
@@ -104,12 +106,8 @@ export default function App() {
 
   async function shareFailure() {
     const text = `J'ai tenu ${streak} tours sur Luck or Suck et j'ai sécurisé ${bank}. Tu fais mieux ?`;
-    if (navigator.share) {
-      await navigator.share({ title: 'Luck or Suck', text });
-    } else {
-      await navigator.clipboard?.writeText(text);
-      setPhrase('Copié. Va provoquer tes potes.');
-    }
+    if (navigator.share) await navigator.share({ title: 'Luck or Suck', text });
+    else await navigator.clipboard?.writeText(text);
   }
 
   return (
@@ -119,29 +117,25 @@ export default function App() {
         <span>COFFRÉ<br/><strong>{bank}</strong></span>
       </header>
 
-      {!gameOver ? (
-        <>
-          <p className="phrase">{phrase}</p>
-          <div className={`number ${timeLeft === 1 ? 'danger' : ''}`}>{number}</div>
-          <div className={`timer ${timeLeft === 1 ? 'danger' : ''}`}>{timeLeft}s</div>
-          <div className="streak">Série {streak} · x{multiplier}</div>
-          {error && <p>{error}</p>}
-          <div className="buttons">
-            <button disabled={loading} onClick={() => play('lower')}>PLUS BAS</button>
-            <button disabled={loading} onClick={() => play('higher')}>PLUS HAUT</button>
-          </div>
-          <button className="bank" disabled={loading || inGame === 0} onClick={bankMoney}>💰 COFFRER {inGame}</button>
-        </>
-      ) : (
-        <section className="result">
-          <p className="phrase">{phrase}</p>
-          <div className="number">{previousNumber} → {number}</div>
-          <h1>PERDU.</h1>
-          <p>COFFRÉ : {bank}</p>
-          <button className="bank" onClick={restart}>REJOUER</button>
-          <button onClick={shareFailure}>PARTAGER MON ÉCHEC</button>
-        </section>
-      )}
+      {!gameOver ? <>
+        <p className="phrase">{phrase}</p>
+        <div key={changeKey} className={`number pop ${timeLeft === 1 ? 'danger' : ''}`}>{number}</div>
+        <div className={`timer ${timeLeft === 1 ? 'danger' : ''}`}>{timeLeft}s</div>
+        <div className="streak">Série {streak} · x{multiplier}</div>
+        {error && <p>{error}</p>}
+        <div className="buttons">
+          <button disabled={loading} onClick={() => play('lower')}>PLUS BAS</button>
+          <button disabled={loading} onClick={() => play('higher')}>PLUS HAUT</button>
+        </div>
+        <button className="bank" disabled={loading || inGame === 0} onClick={bankMoney}>💰 COFFRER {inGame}</button>
+      </> : <section className="result">
+        <p className="phrase">{phrase}</p>
+        <div className="number">{previousNumber} → {number}</div>
+        <h1>PERDU.</h1>
+        <p>COFFRÉ : {bank}</p>
+        <button className="bank" onClick={restart}>REJOUER</button>
+        <button onClick={shareFailure}>PARTAGER MON ÉCHEC</button>
+      </section>}
     </main>
   );
 }
