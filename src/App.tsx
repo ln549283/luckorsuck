@@ -102,6 +102,16 @@ export default function App() {
     window.location.reload();
   }
 
+  async function shareFailure() {
+    const text = `J'ai tenu ${streak} tours sur Luck or Suck et j'ai sécurisé ${bank}. Tu fais mieux ?`;
+    if (navigator.share) {
+      await navigator.share({ title: 'Luck or Suck', text });
+    } else {
+      await navigator.clipboard?.writeText(text);
+      setPhrase('Copié. Va provoquer tes potes.');
+    }
+  }
+
   return (
     <main className={`game ${gameOver ? 'game-over' : ''}`}>
       <header>
@@ -112,15 +122,15 @@ export default function App() {
       {!gameOver ? (
         <>
           <p className="phrase">{phrase}</p>
-          <div className="number">{number}</div>
-          <div className="timer">{timeLeft}s</div>
+          <div className={`number ${timeLeft === 1 ? 'danger' : ''}`}>{number}</div>
+          <div className={`timer ${timeLeft === 1 ? 'danger' : ''}`}>{timeLeft}s</div>
           <div className="streak">Série {streak} · x{multiplier}</div>
           {error && <p>{error}</p>}
           <div className="buttons">
             <button disabled={loading} onClick={() => play('lower')}>PLUS BAS</button>
             <button disabled={loading} onClick={() => play('higher')}>PLUS HAUT</button>
           </div>
-          <button className="bank" disabled={loading} onClick={bankMoney}>💰 COFFRER {inGame}</button>
+          <button className="bank" disabled={loading || inGame === 0} onClick={bankMoney}>💰 COFFRER {inGame}</button>
         </>
       ) : (
         <section className="result">
@@ -129,7 +139,7 @@ export default function App() {
           <h1>PERDU.</h1>
           <p>COFFRÉ : {bank}</p>
           <button className="bank" onClick={restart}>REJOUER</button>
-          <button>PARTAGER MON ÉCHEC</button>
+          <button onClick={shareFailure}>PARTAGER MON ÉCHEC</button>
         </section>
       )}
     </main>
