@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { bankCurrentPot, getGameState, playTurn } from './services/game';
 
 const phrases = [
   'Tu joues avec le feu.',
@@ -11,50 +12,71 @@ const phrases = [
 type Direction = 'higher' | 'lower';
 
 export default function App() {
-  const [number, setNumber] = useState(42);
+  const [number, setNumber] = useState(0);
   const [streak, setStreak] = useState(0);
   const [inGame, setInGame] = useState(0);
   const [bank, setBank] = useState(0);
   const [multiplier, setMultiplier] = useState(1);
   const [phrase, setPhrase] = useState('Prêt à tenter ta chance ?');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // TODO: branchement RPC Supabase après validation des variables d'environnement.
+    async function load() {
+      try {
+        const state = await getGameState();
+        setNumber(state.current_number ?? 0);
+        setStreak(state.streak ?? 0);
+        setInGame(state.in_play ?? 0);
+        setBank(state.loot ?? 0);
+        setMultiplier(state.multiplier ?? 1);
+      } catch (err) {
+        setError('Connexion impossible. Vérifie Supabase.');
+      }
+    }
+
+    load();
   }, []);
 
   async function play(direction: Direction) {
     if (loading) return;
     setLoading(true);
+    setError('');
 
-    // Fallback local temporaire pendant la connexion RPC.
-    const next = Math.floor(Math.random() * 101);
-    const win = direction === 'higher' ? next > number : next < number;
-
-    setNumber(next);
-
-    if (win) {
-      const newStreak = streak + 1;
-      setStreak(newStreak);
-      setMultiplier(Math.min(25, 1 + Math.floor(newStreak / 3)));
-      setInGame((value) => value + next * multiplier);
-      setPhrase(phrases[Math.floor(Math.random() * phrases.length)]);
-    } else {
-      setStreak(0);
-      setMultiplier(1);
-      setInGame(0);
-      setPhrase('Aïe. La chance vient de te gifler.');
+    try {
+      const result = await playTurn(direction);
+      setNumber(result.next_number);
+      setStreak(result.streak ?? 0);
+      setInGame(result.in_play ?? 0);
+      setMultiplier(result.multiplier ?? 1);
+      setPhrase(
+        result.result === 'correct'
+          ? phrases[Math.floor(Math.random() * phrases.length)]
+          : 'Aïe. La chance vient de te gifler.'
+      );
+    } catch {
+      setError('Impossible de jouer ce tour.');
     }
 
     setLoading(false);
   }
 
-  function bankMoney() {
-    setBank((value) => value + inGame);
-    setInGame(0);
-    setStreak(0);
-    setMultiplier(1);
-    setPhrase('Bien joué. Tu as sécurisé le butin.');
+  async function bankMoney() {
+    if (loading) return;
+    setLoading(true);
+
+    try {
+      const result = await bankCurrentPot();
+      setBank(result.loot ?? bank);
+      setInGame(0);
+      setStreak(0);
+      setMultiplier(1);
+      setPhrase('Bien joué. Tu as sécurisé le butin.');
+    } catch {
+      setError('Impossible de coffrer.');
+    }
+
+    setLoading(false);
   }
 
   return (
@@ -68,12 +90,14 @@ export default function App() {
       <div className="number">{number}</div>
       <div className="streak">Série : {streak} · x{multiplier}</div>
 
+      {error && <p>{error}</p>}
+
       <div className="buttons">
         <button disabled={loading} onClick={() => play('lower')}>PLUS BAS</button>
         <button disabled={loading} onClick={() => play('higher')}>PLUS HAUT</button>
       </div>
 
-      <button className="bank" onClick={bankMoney}>COFFRER</button>
+      <button className="bank" disabled={loading} onClick={bankMoney}>COFFRER</button>
     </main>
   );
 }
