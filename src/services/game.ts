@@ -8,6 +8,12 @@ export async function getGameState() {
   return data;
 }
 
+export async function startRound() {
+  const { data, error } = await supabase.rpc('start_round');
+  if (error) throw error;
+  return data;
+}
+
 export async function playTurn(direction: Direction) {
   const { data, error } = await supabase.rpc('play_turn', {
     p_direction: direction,
