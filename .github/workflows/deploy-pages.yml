@@ -1,4 +1,5 @@
 name: Deploy PWA
+# Pages source: GitHub Actions
 
 on:
   push:
