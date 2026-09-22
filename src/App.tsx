@@ -4,7 +4,7 @@ import { ensureAnonymousSession } from './services/auth';
 import { setSoundEnabled, sounds } from './services/sound';
 import { copy, type Language } from './data/i18n';
 
-type Screen = 'home' | 'game' | 'over';
+type Screen = 'home' | 'game';
 
 function pick<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)];
@@ -36,8 +36,6 @@ export default function App() {
   const [turnKey, setTurnKey] = useState(0);
   const [timeLeft, setTimeLeft] = useState(3);
 
-  const [lostPot, setLostPot] = useState(0);
-  const [lostStreak, setLostStreak] = useState(0);
 
   const t = copy[language];
 
@@ -102,22 +100,10 @@ export default function App() {
   }, [streak]);
 
   function contextualPhrase(
-    direction: Direction,
-    previous: number,
-    next: number,
     result: 'correct' | 'wrong' | 'timeout',
     nextStreak: number
   ) {
     if (result === 'timeout') return pick(t.timeout);
-
-    const obvious = previous === 0 || previous === 100;
-    if (obvious) return result === 'correct' ? pick(t.obviousWin) : pick(t.obviousFail);
-
-    const brutal =
-      (previous === 99 && direction === 'lower' && next === 100) ||
-      (previous === 1 && direction === 'higher' && next === 0);
-
-    if (brutal) return pick(t.brutal);
     if (result !== 'correct') return pick(t.fail);
     return getStreakPhrase(language, nextStreak);
   }
@@ -126,9 +112,6 @@ export default function App() {
     if (loading || screen !== 'game' || number === null) return;
 
     const oldNumber = number;
-    const oldPot = inGame;
-    const oldStreak = streak;
-
     setLoading(true);
     setError('');
 
@@ -139,6 +122,7 @@ export default function App() {
       const result = await playTurn(direction);
       const next = result.next_number ?? oldNumber;
       const nextStreak = result.streak ?? 0;
+      const resultType = result.result as 'correct' | 'wrong' | 'timeout';
 
       setPreviousNumber(oldNumber);
       setNumber(next);
@@ -149,17 +133,24 @@ export default function App() {
       setMultiplier(result.multiplier ?? 1);
       setBankValue(result.bank_value ?? 0);
       setTurnKey((value) => value + 1);
+      setPhrase(contextualPhrase(resultType, nextStreak));
 
-      const resultType = result.result as 'correct' | 'wrong' | 'timeout';
-      setPhrase(contextualPhrase(direction, oldNumber, next, resultType, nextStreak));
-
-      if (resultType !== 'correct') {
-        sounds.fail();
-        setLostPot(oldPot);
-        setLostStreak(oldStreak);
-        setScreen('over');
-      } else {
+      if (resultType === 'correct') {
         sounds.success(nextStreak);
+      } else {
+        sounds.fail();
+
+        // Laisse le joueur voir le nombre qui l'a battu, sans casser la session.
+        await new Promise((resolve) => window.setTimeout(resolve, 700));
+
+        const fresh = await startRound();
+        setNumber(fresh.current_number ?? next);
+        setStreak(fresh.streak ?? 0);
+        setInGame(fresh.in_play ?? 0);
+        setLoot(fresh.loot ?? loot);
+        setMultiplier(fresh.multiplier ?? 1);
+        setBankValue(fresh.bank_value ?? 0);
+        setTurnKey((value) => value + 1);
       }
     } catch {
       setError(t.playError);
@@ -190,22 +181,6 @@ export default function App() {
     }
   }
 
-  async function shareFailure() {
-    const text = language === 'fr'
-      ? `J’ai fait une série de ${lostStreak} sur Luck or Suck, perdu ${lostPot} en jeu et sécurisé ${loot}. Tu fais mieux ?`
-      : `I hit a ${lostStreak} streak on Luck or Suck, lost ${lostPot} on the line and banked ${loot}. Beat that.`;
-
-    try {
-      if (navigator.share) await navigator.share({ title: 'Luck or Suck', text });
-      else {
-        await navigator.clipboard?.writeText(text);
-        setPhrase(t.copied);
-      }
-    } catch {
-      // User cancelled sharing: nothing to report.
-    }
-  }
-
   async function startGame() {
     if (loading || number === null) return;
 
@@ -223,8 +198,6 @@ export default function App() {
       setBankValue(state.bank_value ?? 0);
       setPhrase(pick(t.intro));
       setPreviousNumber(null);
-      setLostPot(0);
-      setLostStreak(0);
       setTurnKey((value) => value + 1);
       setScreen('game');
     } catch {
@@ -266,29 +239,6 @@ export default function App() {
     );
   }
 
-  if (screen === 'over') {
-    return (
-      <main className="game game-over">
-        <section className="result">
-          <p className="phrase failure">{phrase}</p>
-          <div className="result-numbers">
-            <span>{previousNumber}</span>
-            <span className="arrow">→</span>
-            <strong>{number}</strong>
-          </div>
-          <h1>{t.lost}</h1>
-          <div className="loss-stats">
-            <div><span>{t.streak}</span><strong>{lostStreak}</strong></div>
-            <div><span>{t.loot}</span><strong>{loot}</strong></div>
-          </div>
-          <button className="play-cta" onClick={() => void startGame()}>{t.replay}</button>
-          <button className="secondary-action" onClick={shareFailure}>{t.share}</button>
-          <button className="text-action" onClick={() => setScreen('home')}>LUCK OR SUCK</button>
-        </section>
-      </main>
-    );
-  }
-
   return (
     <main className={`game ${tension}`}>
       <header className="score-bar">
@@ -307,10 +257,10 @@ export default function App() {
 
       <div className="number-stage">
         <div key={turnKey} className="number pop">{number}</div>
-        <div className={`timer-block ${timeLeft <= 1 ? 'timer-danger' : ''}`}>
+        <div className={`timer-block ${timeLeft <= 2 ? 'timer-mid' : ''} ${timeLeft <= 1 ? 'timer-danger' : ''} ${timeLeft <= .5 ? 'timer-critical' : ''}`}>
           <div className="timer-readout" aria-live="off">
-            <span>{language === 'fr' ? 'TEMPS' : 'TIME'}</span>
-            <strong>{Math.max(0, Math.ceil(timeLeft))}<small>s</small></strong>
+            <span>{language === 'fr' ? 'TEMPS RESTANT' : 'TIME LEFT'}</span>
+            <strong>{Math.max(0, timeLeft).toFixed(1)}<small>s</small></strong>
           </div>
           <div key={`timer-${turnKey}`} className="timer-track" aria-label="3 seconds">
             <div className="timer-fill" />
@@ -322,10 +272,10 @@ export default function App() {
       {error && <p className="error">{error}</p>}
 
       <div className="buttons">
-        <button className="lower" disabled={loading} onClick={() => void play('lower')}>
+        <button className="lower" disabled={loading} onClick={() => void play('even')}>
           <span>↓</span>{t.lower}
         </button>
-        <button className="higher" disabled={loading} onClick={() => void play('higher')}>
+        <button className="higher" disabled={loading} onClick={() => void play('odd')}>
           {t.higher}<span>↑</span>
         </button>
       </div>
