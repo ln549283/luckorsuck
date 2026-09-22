@@ -34,6 +34,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [turnKey, setTurnKey] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(3);
 
   const [lostPot, setLostPot] = useState(0);
   const [lostStreak, setLostStreak] = useState(0);
@@ -73,10 +74,24 @@ export default function App() {
 
   useEffect(() => {
     if (screen !== 'game' || loading || number === null) return;
+
+    setTimeLeft(3);
+    const startedAt = performance.now();
+
+    const ticker = window.setInterval(() => {
+      const remaining = Math.max(0, 3 - (performance.now() - startedAt) / 1000);
+      setTimeLeft(remaining);
+    }, 50);
+
     const timer = window.setTimeout(() => {
+      setTimeLeft(0);
       void play('timeout');
     }, 3000);
-    return () => window.clearTimeout(timer);
+
+    return () => {
+      window.clearInterval(ticker);
+      window.clearTimeout(timer);
+    };
   }, [screen, loading, turnKey, number]);
 
   const tension = useMemo(() => {
@@ -292,8 +307,14 @@ export default function App() {
 
       <div className="number-stage">
         <div key={turnKey} className="number pop">{number}</div>
-        <div key={`timer-${turnKey}`} className="timer-track" aria-label="3 seconds">
-          <div className="timer-fill" />
+        <div className={`timer-block ${timeLeft <= 1 ? 'timer-danger' : ''}`}>
+          <div className="timer-readout" aria-live="off">
+            <span>{language === 'fr' ? 'TEMPS' : 'TIME'}</span>
+            <strong>{Math.max(0, Math.ceil(timeLeft))}<small>s</small></strong>
+          </div>
+          <div key={`timer-${turnKey}`} className="timer-track" aria-label="3 seconds">
+            <div className="timer-fill" />
+          </div>
         </div>
       </div>
 
