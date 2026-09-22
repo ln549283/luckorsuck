@@ -273,10 +273,10 @@ export default function App() {
 
       <div className="buttons">
         <button className="lower" disabled={loading} onClick={() => void play('even')}>
-          <span>↓</span>{t.lower}
+          {t.lower}
         </button>
         <button className="higher" disabled={loading} onClick={() => void play('odd')}>
-          {t.higher}<span>↑</span>
+          {t.higher}
         </button>
       </div>
 
