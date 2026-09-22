@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type Direction = 'higher' | 'lower' | 'timeout';
+export type Direction = 'even' | 'odd' | 'timeout';
 
 export async function getGameState() {
   const { data, error } = await supabase.rpc('get_game_state');
