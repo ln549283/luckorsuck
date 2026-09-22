@@ -4,7 +4,7 @@ export const copy = {
   fr: {
     subtitle: 'Teste ta chance. Ou fais-toi humilier.',
     play: 'JOUER',
-    best: 'MEILLEURE SÉRIE',
+    best: 'MEILLEURE SÉRIE DU JOUR',
     soundOn: 'SON ON',
     soundOff: 'SON OFF',
     inPlay: 'EN JEU',
@@ -66,7 +66,7 @@ export const copy = {
   en: {
     subtitle: 'Test your luck. Or get humbled.',
     play: 'PLAY',
-    best: 'BEST STREAK',
+    best: 'TODAY’S BEST STREAK',
     soundOn: 'SOUND ON',
     soundOff: 'SOUND OFF',
     inPlay: 'ON THE LINE',
