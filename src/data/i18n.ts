@@ -10,8 +10,8 @@ export const copy = {
     inPlay: 'EN JEU',
     loot: 'BUTIN',
     streak: 'Série',
-    lower: 'PLUS BAS',
-    higher: 'PLUS HAUT',
+    lower: 'PAIR',
+    higher: 'IMPAIR',
     bank: 'COFFRER',
     lost: 'PERDU.',
     replay: 'REJOUER',
@@ -22,7 +22,7 @@ export const copy = {
     copied: 'Copié. Va provoquer tes potes.',
     intro: [
       'Trois secondes. Pas une de plus.',
-      'Choisis vite. Regrette après.',
+      'Pair ou impair. Trois secondes. Choisis.',
       'La chance est prête. Toi, moins sûr.'
     ],
     streakPhrases: {
@@ -53,9 +53,9 @@ export const copy = {
       'Un choix audacieux. Enfin non.'
     ],
     obviousFail: [
-      '0 ou 100. Et t’as quand même trouvé le mauvais bouton.',
-      'Tu l’as fait exprès, rassure-moi.',
-      'Là, même le hasard te juge.'
+      'C’était du 50/50. Et pourtant.',
+      'Une chance sur deux. Raté.',
+      'Le hasard vient de te prendre pour cible.'
     ],
     brutal: [
       'Sur 14 563 210 parties, j’avais jamais vu ça.',
@@ -72,8 +72,8 @@ export const copy = {
     inPlay: 'ON THE LINE',
     loot: 'LOOT',
     streak: 'Streak',
-    lower: 'LOWER',
-    higher: 'HIGHER',
+    lower: 'EVEN',
+    higher: 'ODD',
     bank: 'BANK IT',
     lost: 'YOU LOST.',
     replay: 'AGAIN',
@@ -84,7 +84,7 @@ export const copy = {
     copied: 'Copied. Go annoy your friends.',
     intro: [
       'Three seconds. Don’t waste them.',
-      'Pick fast. Regret later.',
+      'Even or odd. Three seconds. Pick.',
       'Luck is ready. You? Debatable.'
     ],
     streakPhrases: {
@@ -115,9 +115,9 @@ export const copy = {
       'Bold choice. Actually, no.'
     ],
     obviousFail: [
-      '0 or 100. And you STILL hit the wrong button.',
-      'You did that on purpose, right?',
-      'Even luck is judging you.'
+      'It was 50/50. And yet.',
+      'One chance in two. Missed.',
+      'Luck just picked you as a target.'
     ],
     brutal: [
       'In 14,563,210 games, I’ve never seen that.',
