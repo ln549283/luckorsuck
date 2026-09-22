@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { bankCurrentPot, getGameState, playTurn, type Direction } from './services/game';
+import { bankCurrentPot, getGameState, playTurn, startRound, type Direction } from './services/game';
 import { ensureAnonymousSession } from './services/auth';
 import { setSoundEnabled, sounds } from './services/sound';
 import { copy, type Language } from './data/i18n';
@@ -191,14 +191,32 @@ export default function App() {
     }
   }
 
-  function startGame() {
-    if (number === null) return;
-    setPhrase(pick(t.intro));
-    setPreviousNumber(null);
-    setLostPot(0);
-    setLostStreak(0);
-    setTurnKey((value) => value + 1);
-    setScreen('game');
+  async function startGame() {
+    if (loading || number === null) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const state = await startRound();
+      setNumber(state.current_number ?? number);
+      setStreak(state.streak ?? 0);
+      setBestStreak(state.best_streak ?? bestStreak);
+      setInGame(state.in_play ?? 0);
+      setLoot(state.loot ?? loot);
+      setMultiplier(state.multiplier ?? 1);
+      setBankValue(state.bank_value ?? 0);
+      setPhrase(pick(t.intro));
+      setPreviousNumber(null);
+      setLostPot(0);
+      setLostStreak(0);
+      setTurnKey((value) => value + 1);
+      setScreen('game');
+    } catch {
+      setError(t.connection);
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (screen === 'home') {
@@ -216,7 +234,7 @@ export default function App() {
 
           {error && <p className="error">{error}</p>}
 
-          <button className="play-cta" disabled={loading || number === null} onClick={startGame}>
+          <button className="play-cta" disabled={loading || number === null} onClick={() => void startGame()}>
             {loading ? '…' : t.play}
           </button>
 
@@ -248,7 +266,7 @@ export default function App() {
             <div><span>{t.streak}</span><strong>{lostStreak}</strong></div>
             <div><span>{t.loot}</span><strong>{loot}</strong></div>
           </div>
-          <button className="play-cta" onClick={startGame}>{t.replay}</button>
+          <button className="play-cta" onClick={() => void startGame()}>{t.replay}</button>
           <button className="secondary-action" onClick={shareFailure}>{t.share}</button>
           <button className="text-action" onClick={() => setScreen('home')}>LUCK OR SUCK</button>
         </section>
